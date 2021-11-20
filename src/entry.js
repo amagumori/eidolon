@@ -13,6 +13,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 //import SeedScene from './objects/Scene.js';
 import BasicLights from './objects/Lights.js';
+import { HalfEdgeMesh } from './objects/eino/halfEdge.js';
 
 const loader = new GLTFLoader();
 
@@ -22,7 +23,8 @@ const renderer = new WebGLRenderer({antialias: true});
 const controls = new OrbitControls( camera, renderer.domElement );
 controls.autoRotate = true;
 
-function wireframeGLTF( gltfScene ) {
+// merge gltf scene into single BufferGeometry
+function mergeGLTF( gltfScene ) {
   var geos = []
   gltfScene.traverse(function (child) { 
     if (child.type == 'Mesh') {
@@ -36,10 +38,9 @@ function wireframeGLTF( gltfScene ) {
       geos.push(geo)
     }
   })
-  const uniBuf = BufferGeometryUtils.mergeBufferGeometries(geos);
-  const edges = new EdgesGeometry(uniBuf);
-  const lines = new LineSegments( edges );
-  return lines;
+
+  const buffer = BufferGeometryUtils.mergeBufferGeometries(geos);
+  return buffer;
 }
 
 
@@ -69,7 +70,18 @@ const testMesh = loader.load('../meshes/scene.glb', (gltf) => {
   scene.add(line)
   */
 
-  const lines = wireframeGLTF(gltf.scene)
+  const buf = mergeGLTF(gltf.scene)
+
+  let attribs = Object.keys(buf.attributes)
+  for ( var i of attribs ) console.log('attribute: ' + i)
+
+  const heMesh = new HalfEdgeMesh(buf);
+
+  const arrows = heMesh.halfEdgeArrows()
+  scene.add(arrows)
+
+  const edges = new EdgesGeometry(buf);
+  const lines = new LineSegments( edges );
   scene.add(lines)
 
 }, undefined, (error) => {

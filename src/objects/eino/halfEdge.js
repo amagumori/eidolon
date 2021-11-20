@@ -1,5 +1,7 @@
+import { ArrowHelper, Vector3 } from 'three';
 
-class HalfEdgeMesh extends HalfEdge {
+
+class HalfEdgeMesh { 
 
   // takes a BufferGeometry
   constructor( inputMesh ) {
@@ -8,23 +10,44 @@ class HalfEdgeMesh extends HalfEdge {
     this.edges = []
 
     if (inputMesh == null) console.log('no input mesh provided to halfEdge constructor.');
+    if (inputMesh.type != 'BufferGeometry') console.log('incorrect mesh input type, not BufGeo')
 
-    var verts = inputMesh.getAttribute('vertices').array
-    var len   = verts.length
+    let vertAttrib = inputMesh.getAttribute('position')
+    var vertices   = vertAttrib.array
+    let itemSize   = vertAttrib.itemSize
+    console.log('itemSize: ' + itemSize)
+    var count = vertAttrib.count
 
-    var indices = inputMesh.getAttribute('indices').array
+    var indices = inputMesh.getIndex().array
+    /*console.log('indices: ' + indices)
+    console.log('vertices: ' + vertices)
+    console.log('count: ' + count) */
     var indicesLen = indices.length
-
+    console.log('indiceslen: ' + indicesLen)
     // vertices are CCW 
-    for (let i=0; i < indicesLen; i+= 3) {
-      
+    //for (let i=0; i < count; i+= itemSize) {
+    for (let i=0; i < indicesLen; i+= itemSize) {
+
+      // this sucks, man.
+      let index  = indices[i]
+      let index2 = indices[i+1]
+      let index3 = indices[i+2]
+      let v0 = new Vector3( vertices[index], vertices[index+1], vertices[index+2] )
+      let v1 = new Vector3( vertices[index2], vertices[index2+1], vertices[index2+2] )
+      let v2 = new Vector3( vertices[index3], vertices[index3+1], vertices[index3+2] )
+
       var face = new Face()
-      face.create( verts[indices[i]], 
-                   verts[indices[i+1]],
-                   verts[indices[i+2]])
+      face.create( v0, v1, v2 ) 
+
+      //console.log('created face data: ' + JSON.stringify(face))
+      /*for (let j=0; j < 3; j++ ) {
+        console.log('face halfedges: ' + JSON.stringify(face.getEdge() ))
+      }*/
 
       this.faces.push(face)
     }
+
+    console.table(this.faces[0])
 
     // this might be the dumbest thing i've ever written.
     // there has to be a better way.
@@ -58,6 +81,18 @@ class HalfEdgeMesh extends HalfEdge {
 
   }
 
+  halfEdgeArrows() {
+    const arrowArray = []
+    for (var edge of edges) {
+      let origin = edge.tail()
+      let vec = edge.head().sub(origin)
+      vec.normalize()
+      const arrow = new ArrowHelper( vec, origin, 1, 0xdd0000 )
+      arrowArray.push(arrow)
+    }
+    return arrowArray
+  }
+  
   /*
   getSameEdge (v1, v2) {
   
@@ -78,91 +113,6 @@ class HalfEdgeMesh extends HalfEdge {
   */
 
   // TODO https://github.com/mrdoob/three.js/blob/master/examples/jsm/math/ConvexHull.js#L593 ??
-}
-
-class Face {
-
-	constructor() {
-
-		this.normal = new Vector3();
-		this.midpoint = new Vector3();
-		this.area = 0;
-
-		this.constant = 0; // signed distance from face to the origin
-		this.outside = null; // reference to a vertex in a vertex list this face can see
-		this.mark = Visible;
-		this.edge = null;
-
-	}
-
-	static create( a, b, c ) {
-
-		const face = new Face();
-
-		const e0 = new HalfEdge( a, face );
-		const e1 = new HalfEdge( b, face );
-		const e2 = new HalfEdge( c, face );
-
-		// join edges
-
-		e0.next = e2.prev = e1;
-		e1.next = e0.prev = e2;
-		e2.next = e1.prev = e0;
-
-		// main half edge reference
-
-		face.edge = e0;
-
-		return face.compute();
-
-	}
-
-	getEdge( i ) {
-
-		let edge = this.edge;
-
-		while ( i > 0 ) {
-
-			edge = edge.next;
-			i --;
-
-		}
-
-		while ( i < 0 ) {
-
-			edge = edge.prev;
-			i ++;
-
-		}
-
-		return edge;
-
-	}
-
-	compute() {
-
-		const a = this.edge.tail();
-		const b = this.edge.head();
-		const c = this.edge.next.head();
-
-		_triangle.set( a.point, b.point, c.point );
-
-		_triangle.getNormal( this.normal );
-		_triangle.getMidpoint( this.midpoint );
-		this.area = _triangle.getArea();
-
-		this.constant = this.normal.dot( this.midpoint );
-
-		return this;
-
-	}
-
-	distanceToPoint( point ) {
-
-		return this.normal.dot( point ) - this.constant;
-
-	}
-
 }
 
 // Entity for a Doubly-Connected Edge List (DCEL).
@@ -228,6 +178,95 @@ class HalfEdge {
 		edge.twin = this;
 
 		return this;
+
+	}
+
+}
+
+
+class Face {
+
+	constructor() {
+
+		this.normal = new Vector3();
+		this.midpoint = new Vector3();
+		this.area = 0;
+
+		this.constant = 0; // signed distance from face to the origin
+		this.outside = null; // reference to a vertex in a vertex list this face can see
+		//this.mark = Visible;
+		this.edge = null;
+
+	}
+
+	create( a, b, c ) {
+
+		const face = new Face();
+
+		const e0 = new HalfEdge( a, face );
+		const e1 = new HalfEdge( b, face );
+		const e2 = new HalfEdge( c, face );
+
+		// join edges
+
+		e0.next = e2.prev = e1;
+		e1.next = e0.prev = e2;
+		e2.next = e1.prev = e0;
+
+		// main half edge reference
+
+		face.edge = e0;
+
+    //console.log( "bepp: " + console.table(e0))
+
+		return face.compute();
+
+	}
+
+	getEdge( i ) {
+
+		let edge = this.edge;
+
+		while ( i > 0 ) {
+
+			edge = edge.next;
+			i --;
+
+		}
+
+		while ( i < 0 ) {
+
+			edge = edge.prev;
+			i ++;
+
+		}
+
+		return edge;
+
+	}
+
+	compute() {
+
+		const a = this.edge.tail();
+		const b = this.edge.head();
+		const c = this.edge.next.head();
+
+    
+		_triangle.set( a.point, b.point, c.point );
+
+		_triangle.getNormal( this.normal );
+		_triangle.getMidpoint( this.midpoint );
+		this.area = _triangle.getArea();
+    
+		this.constant = this.normal.dot( this.midpoint );
+
+		return this;
+
+	}
+
+	distanceToPoint( point ) {
+
+		return this.normal.dot( point ) - this.constant;
 
 	}
 
