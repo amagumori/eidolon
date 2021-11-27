@@ -1,5 +1,6 @@
 node_modules
 /build
+/meshes/AureedBuilding.glb
 *.log*
 .DS_Store
 *.code-workspace
