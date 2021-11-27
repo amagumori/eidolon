@@ -11,10 +11,8 @@ import { sRGBEncoding, LineSegments, Color, LineBasicMaterial, EdgesGeometry, We
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-//import SeedScene from './objects/Scene.js';
-import BasicLights from './objects/Lights.js';
-//import { HalfEdgeMesh } from './objects/eino/halfEdge.js';
-import { HalfEdgeMesh } from './objects/eino/halfedge.js';
+import BasicLights from './Lights.js';
+import { HalfEdgeMesh } from './eino/halfedge.js';
 
 const loader = new GLTFLoader();
 
@@ -36,13 +34,15 @@ controls.autoRotate = true;
 // merge gltf scene into single BufferGeometry
 function mergeGLTF( gltfScene ) {
   var geos = []
+  var up   = new Vector3(0,0,1)
   gltfScene.traverse(function (child) { 
     if (child.type == 'Mesh') {
       let geo = child.geometry
       // go up the transform chain
       let parent = child.parent
       while (parent != null) {
-        geo.applyMatrix4(parent.matrix)
+        //geo.applyMatrix4(parent.matrix)
+        geo.up = up
         parent = parent.parent
       }
       geos.push(geo)
@@ -54,7 +54,7 @@ function mergeGLTF( gltfScene ) {
 }
 
 
-const testMesh = loader.load('../meshes/cassette_player.glb', (gltf) => {
+const testMesh = loader.load('../meshes/coffeecart.glb', (gltf) => {
   //scene.add( gltf.scene )
   console.log(gltf.scene)
 

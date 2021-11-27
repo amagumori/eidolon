@@ -1,6 +1,9 @@
 node_modules
 /build
 /meshes/AureedBuilding.glb
+/meshes/cassette_player.glb
+/meshes/walkman.glb
+/meshes/coffeecart.glb
 *.log*
 .DS_Store
 *.code-workspace

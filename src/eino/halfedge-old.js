@@ -1,3 +1,4 @@
+/*
 import { ArrowHelper, Vector3 } from 'three';
 
 
@@ -484,3 +485,5 @@ class VertexList {
 
 
 export { HalfEdgeMesh };
+
+*/
