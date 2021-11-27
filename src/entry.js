@@ -13,7 +13,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 //import SeedScene from './objects/Scene.js';
 import BasicLights from './objects/Lights.js';
-import { HalfEdgeMesh } from './objects/eino/halfEdge.js';
+//import { HalfEdgeMesh } from './objects/eino/halfEdge.js';
+import { HalfEdgeMesh } from './objects/eino/halfedge.js';
 
 const loader = new GLTFLoader();
 
@@ -75,10 +76,11 @@ const testMesh = loader.load('../meshes/scene.glb', (gltf) => {
   let attribs = Object.keys(buf.attributes)
   for ( var i of attribs ) console.log('attribute: ' + i)
 
-  const heMesh = new HalfEdgeMesh(buf);
+  const heMesh = new HalfEdgeMesh();
+  heMesh.create(buf);
 
-  const arrows = heMesh.halfEdgeArrows()
-  scene.add(arrows)
+  //const arrows = heMesh.halfEdgeArrows()
+  //scene.add(arrows)
 
   const edges = new EdgesGeometry(buf);
   const lines = new LineSegments( edges );
