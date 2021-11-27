@@ -1,10 +1,11 @@
-
+import { ArrowHelper, Vector3 } from 'three';
 
 class HalfEdgeMesh {
 
   constructor() {
     this.halfedges = []
     this.vertices = []
+    this.vertexBuffer = []
     this.faces    = []
     this.edges    = []
     this.edgeDict    = {}
@@ -44,6 +45,13 @@ class HalfEdgeMesh {
     var faces = this.faces
     let vertAttrib = mesh.getAttribute('position')
     var vertices = vertAttrib.array
+
+    for (let i=0; i < vertices.length; i+= 3) {
+      var vertex = []
+      vertex.push( vertices[i], vertices[i+1], vertices[i+2] )
+      this.vertexBuffer.push(vertex)
+    }
+
     var itemSize = vertAttrib.itemSize  // this has to be 3 lol
     var count    = vertAttrib.count
 
@@ -132,6 +140,47 @@ class HalfEdgeMesh {
 
     }
 
+  }
+
+
+  halfEdgeArrows( scene ) {
+
+    let edgeKeys = Object.keys(this.edgeDict)
+    let buffer  = this.vertexBuffer
+
+    console.log('half-edge count: ' + edgeKeys.length)
+
+    var vec0 = new Vector3()
+    var vec1 = new Vector3()
+    var len  = 0.0;
+
+    for (let i=0; i < edgeKeys.length; i++ ) {
+      let indices = edgeKeys[i].split("-").map(Number)
+      let vert0 = buffer[indices[0]]
+      let vert1 = buffer[indices[1]]
+
+      vec0.set( vert0[0], vert0[1], vert0[2] )
+      vec1.set( vert1[0], vert1[1], vert1[2] )
+
+      len  = vec0.distanceTo(vec1)
+
+      if ( len > 0.01 ) {
+
+        vec0 = vec0.sub(vec1)
+        const arrow = new ArrowHelper( vec0, vec1, len, 0x00ddee )
+        scene.add(arrow)
+      }
+
+      /*
+      vec0 = vec0.sub(vec1)
+
+      vec0.normalize()
+
+      const arrow = new ArrowHelper( vec0, vec1, 0.01, 0x00ddee )
+      scene.add(arrow)
+      */
+    }
+      
   }
 
 }
