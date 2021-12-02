@@ -7,12 +7,13 @@
  * 
  */
 
-import { sRGBEncoding, LineSegments, Color, LineBasicMaterial, EdgesGeometry, WebGLRenderer, PerspectiveCamera, Scene, Vector3 } from 'three';
+import { Raycaster, sRGBEncoding, LineSegments, Color, LineBasicMaterial, EdgesGeometry, WebGLRenderer, PerspectiveCamera, Scene, Vector3, Vector2, Mesh } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import BasicLights from './Lights.js';
 import { HalfEdgeMesh } from './eino/halfedge.js';
+import { Selector } from './selection/select.js';
 
 const loader = new GLTFLoader();
 
@@ -23,13 +24,17 @@ camera.zoom = 50
 const renderer = new WebGLRenderer({antialias: true});
 const controls = new OrbitControls( camera, renderer.domElement )
 
+const raycaster = new Raycaster()
+//const selector = new Selector( camera, raycaster )
+
 const lineMaterial = new LineBasicMaterial( { 
   color: 0xffffff,
   linewidth: 5 
 })
 
+var mainMeshBuffer = {}
 
-controls.autoRotate = true;
+//controls.autoRotate = true;
 
 // merge gltf scene into single BufferGeometry
 function mergeGLTF( gltfScene ) {
@@ -54,24 +59,25 @@ function mergeGLTF( gltfScene ) {
 }
 
 
-const testMesh = loader.load('../meshes/coffeecart.glb', (gltf) => {
+const testMesh = loader.load('../meshes/walkman.glb', (gltf) => {
   //scene.add( gltf.scene )
-  console.log(gltf.scene)
 
-  const buf = mergeGLTF(gltf.scene)
+  var buffer = mergeGLTF(gltf.scene)
 
-  let attribs = Object.keys(buf.attributes)
-  for ( var i of attribs ) console.log('attribute: ' + i)
+  mainMeshBuffer = new Mesh( buffer )
+
+  scene.add(mainMeshBuffer)
 
   const heMesh = new HalfEdgeMesh();
-  heMesh.create(buf);
+  heMesh.create(buffer);
 
   //heMesh.halfEdgeArrows(scene)
 
-  const edges = new EdgesGeometry(buf);
+  const edges = new EdgesGeometry(buffer);
   const lines = new LineSegments( edges, lineMaterial );
   scene.add(lines)
 
+  console.log(gltf.scene)
 }, undefined, (error) => {
   console.error( error )
 })
@@ -111,6 +117,40 @@ const windowResizeHanlder = () => {
 };
 windowResizeHanlder();
 window.addEventListener('resize', windowResizeHanlder);
+
+// @TODO SELECTION
+
+const onClick = ( e ) => {
+  e.preventDefault()
+  console.log('fired')
+
+  var mouseCoord = new Vector2()
+  mouseCoord.x = ( event.clientX / window.innerWidth ) * 2 - 1
+  mouseCoord.y = - ( event.clientY / window.innerHeight ) * 2 + 1
+
+  raycaster.setFromCamera( mouseCoord, camera )
+  
+  // CANNOT RAYCAST AGAINST LINESEGMENTS
+  
+  let meshes = []
+  scene.traverse( function ( child ) {
+    console.log(child)
+    if ( child.type == "Mesh" ) {
+      meshes.push(child)
+    }
+  })
+
+  //console.log(meshes)
+  console.table(mainMeshBuffer)
+  const intersects = raycaster.intersectObjects( mainMeshBuffer )
+  console.log(intersects[0])
+  if ( intersects.length > 0 ) {
+    console.table(intersects[0])
+    intersects[0].object.material.color.set( 0x00eeee ) 
+  }
+}
+
+renderer.domElement.addEventListener('click', onClick, false)
 
 // dom
 document.body.style.margin = 0;
