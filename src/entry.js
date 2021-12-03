@@ -7,7 +7,7 @@
  * 
  */
 
-import { Raycaster, sRGBEncoding, LineSegments, Color, LineBasicMaterial, EdgesGeometry, WebGLRenderer, PerspectiveCamera, Scene, Vector3, Vector2, Mesh } from 'three';
+import { Raycaster, MeshBasicMaterial, FlatShading, VertexColors, FaceColors, sRGBEncoding, LineSegments, Color, LineBasicMaterial, EdgesGeometry, WebGLRenderer, PerspectiveCamera, Scene, Vector3, Vector2, Mesh } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -32,7 +32,14 @@ const lineMaterial = new LineBasicMaterial( {
   linewidth: 5 
 })
 
+var mainMeshMaterial = new MeshBasicMaterial( {
+    color: 0xf0f0f0,
+    shading: FlatShading,
+    vertexColors: FaceColors 
+});
+
 var mainMeshBuffer = {}
+var mainMeshId = 0;
 
 //controls.autoRotate = true;
 
@@ -64,8 +71,8 @@ const testMesh = loader.load('../meshes/walkman.glb', (gltf) => {
 
   var buffer = mergeGLTF(gltf.scene)
 
-  mainMeshBuffer = new Mesh( buffer )
-
+  mainMeshBuffer = new Mesh( buffer, mainMeshMaterial )
+  mainMeshId = mainMeshBuffer.uuid
   scene.add(mainMeshBuffer)
 
   const heMesh = new HalfEdgeMesh();
@@ -135,18 +142,21 @@ const onClick = ( e ) => {
   let meshes = []
   scene.traverse( function ( child ) {
     console.log(child)
-    if ( child.type == "Mesh" ) {
+    if ( child.uuid == mainMeshId ) {
       meshes.push(child)
     }
   })
 
-  //console.log(meshes)
-  console.table(mainMeshBuffer)
-  const intersects = raycaster.intersectObjects( mainMeshBuffer )
+  console.log(meshes)
+  const intersects = raycaster.intersectObject( meshes[0] )
   console.log(intersects[0])
   if ( intersects.length > 0 ) {
-    console.table(intersects[0])
-    intersects[0].object.material.color.set( 0x00eeee ) 
+    let geo = intersects[0].object.geometry
+    console.table(geo)
+    let faceIdx = intersects[0].faceIndex
+    let face = intersects[0].object.geometry.faces[faceIdx]
+    face.color.set( 0x00eeee )
+    //intersects[0].object.material.color.set( 0x00eeee ) 
   }
 }
 
