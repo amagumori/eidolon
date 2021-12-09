@@ -327,4 +327,4 @@ class Edge {
 }
 
 
-export { HalfEdgeMesh }
+export { HalfEdgeMesh, HalfEdge, Face, Edge, Vertex }

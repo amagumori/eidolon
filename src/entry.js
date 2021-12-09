@@ -7,7 +7,7 @@
  * 
  */
 
-import { Raycaster, MeshBasicMaterial, FlatShading, VertexColors, FaceColors, sRGBEncoding, LineSegments, Color, LineBasicMaterial, EdgesGeometry, WebGLRenderer, PerspectiveCamera, Scene, Vector3, Vector2, Mesh } from 'three';
+import { Raycaster, Line, BufferGeometry, BufferAttribute, MeshBasicMaterial, FlatShading, VertexColors, FaceColors, sRGBEncoding, LineSegments, Color, LineBasicMaterial, EdgesGeometry, WebGLRenderer, PerspectiveCamera, Scene, Vector3, Vector2, Mesh } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -28,20 +28,36 @@ const raycaster = new Raycaster()
 //const selector = new Selector( camera, raycaster )
 
 const lineMaterial = new LineBasicMaterial( { 
-  color: 0xffffff,
-  linewidth: 5 
+  color: 0x000000,
+  linewidth: 10 
 })
 
+const selectedLineMaterial = new LineBasicMaterial( {
+  color: 0xffffff,
+  linewidth: 100
+})
+
+const lineGeometry = new BufferGeometry()
+lineGeometry.setAttribute('position', new BufferAttribute( new Float32Array(4*3), 3) )
+
+const line = new Line( lineGeometry, selectedLineMaterial) 
+scene.add(line)
+
 var mainMeshMaterial = new MeshBasicMaterial( {
-    color: 0xf0f0f0,
-    shading: FlatShading,
-    vertexColors: FaceColors 
+    color: 0x00ddee,
+    polygonOffset: true,
+    polygonOffsetFactor: 1,
+    polygonOffsetUnits: 1
 });
+
+const lights = new BasicLights();
+scene.add(lights);
+
 
 var mainMeshBuffer = {}
 var mainMeshId = 0;
 
-//controls.autoRotate = true;
+controls.autoRotate = false;
 
 // merge gltf scene into single BufferGeometry
 function mergeGLTF( gltfScene ) {
@@ -53,7 +69,7 @@ function mergeGLTF( gltfScene ) {
       // go up the transform chain
       let parent = child.parent
       while (parent != null) {
-        //geo.applyMatrix4(parent.matrix)
+        geo.applyMatrix4(parent.matrix)
         geo.up = up
         parent = parent.parent
       }
@@ -66,19 +82,24 @@ function mergeGLTF( gltfScene ) {
 }
 
 
-const testMesh = loader.load('../meshes/walkman.glb', (gltf) => {
+const testMesh = loader.load('../meshes/scene.glb', (gltf) => {
   //scene.add( gltf.scene )
 
   var buffer = mergeGLTF(gltf.scene)
 
+  mainMeshBuffer = new Mesh( buffer )
   mainMeshBuffer = new Mesh( buffer, mainMeshMaterial )
+
   mainMeshId = mainMeshBuffer.uuid
+  
   scene.add(mainMeshBuffer)
 
+  /*
   const heMesh = new HalfEdgeMesh();
   heMesh.create(buffer);
 
-  //heMesh.halfEdgeArrows(scene)
+  heMesh.halfEdgeArrows(scene)
+  */
 
   const edges = new EdgesGeometry(buffer);
   const lines = new LineSegments( edges, lineMaterial );
@@ -88,11 +109,6 @@ const testMesh = loader.load('../meshes/walkman.glb', (gltf) => {
 }, undefined, (error) => {
   console.error( error )
 })
-
-const lights = new BasicLights();
-
-scene.add(lights);
-
 // scene
 //scene.add(seedScene);
 
@@ -141,22 +157,32 @@ const onClick = ( e ) => {
   
   let meshes = []
   scene.traverse( function ( child ) {
-    console.log(child)
     if ( child.uuid == mainMeshId ) {
       meshes.push(child)
     }
   })
 
-  console.log(meshes)
   const intersects = raycaster.intersectObject( meshes[0] )
-  console.log(intersects[0])
+
   if ( intersects.length > 0 ) {
     let geo = intersects[0].object.geometry
-    console.table(geo)
-    let faceIdx = intersects[0].faceIndex
-    let face = intersects[0].object.geometry.faces[faceIdx]
-    face.color.set( 0x00eeee )
-    //intersects[0].object.material.color.set( 0x00eeee ) 
+    let face = intersects[0].face
+
+    let meshPos = geo.attributes.position
+    let linePos = line.geometry.attributes.position
+
+    linePos.copyAt(0, meshPos, face.a)
+    linePos.copyAt(1, meshPos, face.b)
+    linePos.copyAt(2, meshPos, face.c)
+    linePos.copyAt(3, meshPos, face.a)
+
+    line.geometry.applyMatrix4( meshes[0].matrix ) 
+    line.visible = true
+
+    console.log(line)
+
+  } else {
+    line.visible = false
   }
 }
 
