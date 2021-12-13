@@ -24,8 +24,8 @@ camera.zoom = 50
 const renderer = new WebGLRenderer({antialias: true});
 const controls = new OrbitControls( camera, renderer.domElement )
 
-const raycaster = new Raycaster()
-//const selector = new Selector( camera, raycaster )
+// there gotta be a better way 
+const selector = new Selector( camera, renderer, scene )
 
 const lineMaterial = new LineBasicMaterial( { 
   color: 0x000000,
@@ -82,30 +82,27 @@ function mergeGLTF( gltfScene ) {
 }
 
 
-const testMesh = loader.load('../meshes/scene.glb', (gltf) => {
+const loadMesh = loader.load('../meshes/scene.glb', (gltf) => {
   //scene.add( gltf.scene )
 
   var buffer = mergeGLTF(gltf.scene)
 
-  mainMeshBuffer = new Mesh( buffer )
   mainMeshBuffer = new Mesh( buffer, mainMeshMaterial )
 
   mainMeshId = mainMeshBuffer.uuid
   
   scene.add(mainMeshBuffer)
 
-  /*
-  const heMesh = new HalfEdgeMesh();
-  heMesh.create(buffer);
+  const halfEdgeMesh = new HalfEdgeMesh();
+  halfEdgeMesh.create(buffer);
 
-  heMesh.halfEdgeArrows(scene)
-  */
+  selector.setMesh( mainMeshBuffer, halfEdgeMesh ) 
 
   const edges = new EdgesGeometry(buffer);
   const lines = new LineSegments( edges, lineMaterial );
   scene.add(lines)
 
-  console.log(gltf.scene)
+  console.log(mainMeshBuffer)
 }, undefined, (error) => {
   console.error( error )
 })
@@ -143,6 +140,7 @@ window.addEventListener('resize', windowResizeHanlder);
 
 // @TODO SELECTION
 
+/* 
 const onClick = ( e ) => {
   e.preventDefault()
   console.log('fired')
@@ -187,6 +185,7 @@ const onClick = ( e ) => {
 }
 
 renderer.domElement.addEventListener('click', onClick, false)
+*/
 
 // dom
 document.body.style.margin = 0;
