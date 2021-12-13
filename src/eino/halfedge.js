@@ -38,6 +38,27 @@ class HalfEdgeMesh {
     }
   }
 
+  getEdge( index0, index1 ) {
+    var map = this.edgeDict 
+    var keys = this.getEdgeKeys( i0, i1 ) 
+
+    if ( map[ keys[0] ] !== undefined &&
+         map[ keys[1] ] !== undefined ) {
+      return map[ keys[0] ]
+    }
+    return
+  }
+
+  getEdgeKey( index0, index1) {
+    return index0 + '-' + index1
+  }
+
+  getEdgeKeys( index0, index1 ) {
+    let key0 = index0 + '-' + index1 
+    let key1 = index1 + '-' + index0
+
+    return [ key0, key1 ] 
+  }
 
   // BufferGeometry
   // triangle mesh only
@@ -247,17 +268,27 @@ class HalfEdge {
 class Face {
   constructor() {
     this.halfedge = undefined
-    this.vertices = []
     this.index = -1
   }
 
-  // can't do this with getter / setters
-  getVertices() {
-    return this.vertices
+  getHalfEdges() {
+    var initialHalfEdge = he = this.halfedge
+    var hes = []
+    do { 
+      hes.push(he)
+      he = he.next
+    } while ( he != initialHalfEdge ) 
+    return hes
   }
 
-  setVertices( verts ) {
-    this.vertices.push(verts)
+  getVertices() {
+    var initialHalfEdge = he = this.halfedge
+    var verts = []
+    do {
+      verts.push( he.vertex )
+      he = he.next
+    } while ( he != initialHalfEdge )
+    return verts
   }
 
   set index(i) {
@@ -307,6 +338,15 @@ class Edge {
   constructor() {
     this.halfedge = undefined
     this.index = -1
+  }
+
+  getVertices() {
+    var verts = []
+    var he = this.halfedge
+    verts.push( he.vertex )
+    he = he.twin
+    verts.push( he.vertex )
+    return verts
   }
 
   get index () {

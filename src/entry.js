@@ -15,6 +15,8 @@ import BasicLights from './Lights.js';
 import { HalfEdgeMesh } from './eino/halfedge.js';
 import { Selector } from './selection/select.js';
 
+import * as operations from './operations/extrude.js'
+
 const loader = new GLTFLoader();
 
 const scene = new Scene();
